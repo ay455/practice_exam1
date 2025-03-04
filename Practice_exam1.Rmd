@@ -1,0 +1,111 @@
+---
+title: "Practice exam"
+output: html_document
+date: "2025-03-03"
+---
+#Load the data
+```{r}
+library(fpp2)
+library(ggplot2)
+data("arrivals")
+us_arrivals <- arrivals[,"US"] 
+us_arrivals <- ts(arrivals[, "US"], start=start(arrivals), frequency=frequency(arrivals))
+
+```
+#Time series plot
+```{r}
+autoplot(us_arrivals) + ggtitle("US Arrivals to Australia") +  ylab("Number of Arrivals") + xlab("Year")
+```
+###time series apears to have an upward trend, seasonal fluctuation, periodic peaks
+
+###2 - Central tendency
+#summarize the statistics
+```{r}
+summary(us_arrivals) # Min, Max, Mean, Median, Quartiles
+boxplot(us_arrivals, main="Boxplot of US Arrivals to Australia", col="lightblue")
+```
+###Observations from summary stats and boxplot
+-median and mean provide central tendence
+-interquartile range shows variability in arrvials
+-may be some outlier 
+
+
+
+#3- Decomposition
+```{r}
+dec <- decompose(us_arrivals, type = "multiplicative") 
+autoplot(dec)
+```
+###
+-time series shows seasonality
+-decomposition is multiplicative since it increases over time
+-it is seasnoal peakign in december, most likely due to holiday season travels
+-Value low for february and high in december
+December may be Christmas/New Year season and February being an off season
+#seasonaly adjusted series
+```{r}
+seasonally_adjusted <- us_arrivals / dec$seasonal
+
+autoplot(us_arrivals) + autolayer(seasonally_adjusted, series="Seasonally Adjusted", color="red") +ggtitle("US Arrivals: Seasonally Adjusted vs Original") +ylab("Number of Arrivals") +xlab("Year")
+```
+#seasonality shows significant fluctuations 
+
+
+
+#3- Naive Method
+```{r}
+naive_model <- naive(us_arrivals, h=24) 
+autoplot(naive_model)
+```
+#Residual analysis
+```{r}
+residuals_naive <- residuals(naive_model)
+autoplot(residuals_naive) + ggtitle("Residuals of Naïve Model")
+
+```
+#Hisogram of residuals 
+```{r}
+hist(residuals_naive, main="Histogram of Residuals", xlab="Residuals", col="lightblue")
+```
+#fitted values vs residuals
+```{r}
+plot(fitted(naive_model), residuals_naive, main="Fitted Values vs Residuals", xlab="Fitted Values", ylab="Residuals")
+abline(h=0, col="red")
+```
+#Actual values vs residuals
+```{r}
+plot(us_arrivals, residuals_naive, main="Actual Values vs Residuals", xlab="Actual Values", ylab="Residuals")
+abline(h=0, col="red")
+```
+#Acf of residuals
+```{r}
+Acf(residuals_naive, main="ACF of Residuals")
+```
+
+###
+-the residuals should be randomly distributed around zero
+-the histogram shows near normal distribution
+-the acf plot indicated autocorelation
+
+
+#forecasting
+```{r}
+fc <- forecast(naive_model, h=24) 
+autoplot(fc) +
+  ggtitle("Forecast for Next Year") +
+  ylab("Number of Arrivals") +
+  xlab("Year")
+```
+#Forecasting table 
+```{r}
+as.data.frame(fc)
+```
+#forecasting accuracy
+
+```{r}
+accuracy(naive_model)
+```
+
+
+###
+the forecast shows a continuation past trends with seasonalfluctuations, 
